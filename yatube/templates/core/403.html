@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Custom 403{% endblock %}
+{% block content %}
+{% with card_header='Сustom 403' card_body='Ошибка ключа шифрования' %}
+{% include 'includes/card.html' %} 
+{% endwith %}
+{% endblock %}
+
+
+
