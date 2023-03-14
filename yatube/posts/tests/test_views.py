@@ -12,6 +12,7 @@ class PostPagesTests(TestCase):
         super().setUpClass()
         cls.user = User.objects.create_user(username='SadStudent')
         cls.other_user = User.objects.create_user(username="Someone")
+        cls.author = User.objects.create(username='Some_guy')
         cls.group = Group.objects.create(
             title='Тестовая',
             slug='test',
@@ -201,18 +202,12 @@ class PostPagesTests(TestCase):
     # Проверяем возможность отписаться
     def test_unfollow_author(self):
         count = Follow.objects.count()
-        author = User.objects.create(username='Some_guy')
-        self.authorized_client.get(
-            reverse(
-                'posts:profile_follow',
-                kwargs={'username': author.username}
-            )
-        )
+        Follow.objects.create(user=self.user, author=self.author)
         self.assertEqual(Follow.objects.count(), count + 1)
         self.authorized_client.get(
             reverse(
                 'posts:profile_unfollow',
-                kwargs={'username': author.username}
+                kwargs={'username': self.author.username}
             )
         )
         self.assertEqual(Follow.objects.count(), count)
@@ -221,12 +216,13 @@ class PostPagesTests(TestCase):
     def test_shown_post_for_followers(self):
         self.other_client.get(
             reverse('posts:profile_follow',
-                    kwargs={'username': PostPagesTests.user.username})
+                    kwargs={'username': self.user.username})
         )
         response = self.other_client.get(
             reverse('posts:follow_index')
         )
-        self.assertIn(PostPagesTests.post.text, response.content.decode())
+        post = Post.objects.get(author=self.user)
+        self.assertIn(post.text, response.content.decode())
 
     # Проверяем отсутствие поста у неподписанных
     def test_absence_post_for_others(self):
