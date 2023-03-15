@@ -199,6 +199,20 @@ class PostPagesTests(TestCase):
         ).content
         self.assertNotEqual(resp_cont, response)
 
+    # Проверяем возможность подписаться
+    def test_follow(self):
+        count = Follow.objects.count()
+        self.authorized_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': PostPagesTests.author.username}
+            )
+        )
+        follow = Follow.objects.last()
+        self.assertEqual(Follow.objects.count(), count + 1)
+        self.assertEqual(PostPagesTests.author, follow.author)
+        self.assertEqual(follow.user, PostPagesTests.user)
+
     # Проверяем возможность отписаться
     def test_unfollow_author(self):
         count = Follow.objects.count()
@@ -214,10 +228,7 @@ class PostPagesTests(TestCase):
 
     # Проверяем появление поста у подписчиков
     def test_shown_post_for_followers(self):
-        self.other_client.get(
-            reverse('posts:profile_follow',
-                    kwargs={'username': self.user.username})
-        )
+        Follow.objects.create(user=self.other_user, author=self.user)
         response = self.other_client.get(
             reverse('posts:follow_index')
         )
@@ -226,7 +237,7 @@ class PostPagesTests(TestCase):
 
     # Проверяем отсутствие поста у неподписанных
     def test_absence_post_for_others(self):
-        response = self.client.get(
+        response = self.authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertNotIn(PostPagesTests.post.text, response.content.decode())
+        self.assertNotIn(PostPagesTests.post.text, response.context.get('page_obj'))
