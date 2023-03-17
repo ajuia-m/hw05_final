@@ -199,8 +199,8 @@ class PostPagesTests(TestCase):
         ).content
         self.assertNotEqual(resp_cont, response)
 
-    # Проверяем возможность подписаться
     def test_follow(self):
+        """Проверяем возможность подписаться."""
         count = Follow.objects.count()
         self.authorized_client.get(
             reverse(
@@ -208,13 +208,13 @@ class PostPagesTests(TestCase):
                 kwargs={'username': PostPagesTests.author.username}
             )
         )
-        follow = Follow.objects.last()
         self.assertEqual(Follow.objects.count(), count + 1)
-        self.assertEqual(PostPagesTests.author, follow.author)
-        self.assertEqual(follow.user, PostPagesTests.user)
+        self.assertTrue(Follow.objects.filter(
+                        user=PostPagesTests.user,
+                        author=PostPagesTests.author).exists())
 
-    # Проверяем возможность отписаться
     def test_unfollow_author(self):
+        """Проверяем возможность отписаться."""
         count = Follow.objects.count()
         Follow.objects.create(user=self.user, author=self.author)
         self.assertEqual(Follow.objects.count(), count + 1)
@@ -226,19 +226,18 @@ class PostPagesTests(TestCase):
         )
         self.assertEqual(Follow.objects.count(), count)
 
-    # Проверяем появление поста у подписчиков
     def test_shown_post_for_followers(self):
+        """Проверяем появление поста у подписчиков."""
         Follow.objects.create(user=self.other_user, author=self.user)
         response = self.other_client.get(
             reverse('posts:follow_index')
         )
-        post = Post.objects.get(author=self.user)
-        self.assertIn(post.text, response.content.decode())
+        self.assertIn(self.post.text, response.context['page_obj'][0].text)
 
-    # Проверяем отсутствие поста у неподписанных
     def test_absence_post_for_others(self):
+        """Проверяем отсутствие поста у неподписанных."""
         response = self.authorized_client.get(
             reverse('posts:follow_index')
         )
         self.assertNotIn(PostPagesTests.post.text,
-                         response.context.get('page_obj'))
+                         response.context['page_obj'])
