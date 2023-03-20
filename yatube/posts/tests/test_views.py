@@ -239,5 +239,5 @@ class PostPagesTests(TestCase):
         response = self.authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertNotIn(PostPagesTests.post.text,
+        self.assertNotIn(PostPagesTests.post,
                          response.context['page_obj'])
